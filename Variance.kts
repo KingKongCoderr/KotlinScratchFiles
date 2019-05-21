@@ -5,9 +5,12 @@ interface FoodInspector {
     fun getHarvestDate(): Date
     fun getColor(): String
 }
-abstract class Fruit(val nameId: String, val harvestDate: Date) : FoodInspector
-open class Apple(nameId: String, harvestDate: Date, val color: String) :
-    Fruit(nameId, harvestDate) {
+abstract class Fruit : FoodInspector{
+    abstract val nameId: String
+    abstract val harvestDate: Date
+}
+open class Apple(override val nameId: String, override val harvestDate: Date, val color: String) :
+    Fruit() {
 
     override fun getColor(): String {
         return color
@@ -19,7 +22,7 @@ open class Apple(nameId: String, harvestDate: Date, val color: String) :
 
 }
 class GrannySmith(nameId: String, harvestDate: Date) : Apple(nameId, harvestDate, "green")
-class Orange(nameId: String, harvestDate: Date) : Fruit(nameId, harvestDate) {
+class Orange(override val nameId: String, override val harvestDate: Date) : Fruit() {
 
     override fun getColor(): String {
         return "Orange"
@@ -54,8 +57,10 @@ class CovariantFarm<out T>(val items: List<T>) { //changing this to a Mutable li
     }
 }
 
-class ContravariantConsumer<in T> {
-    fun eatProduce(item: T) = items.add(item)
+class ContravariantConsumer<in T>{
+    fun isProduceFresh(item: T): Unit{
+        print("consumed ${item.toString()}")
+    }
 }
 
 class MeijerProduce {
@@ -98,11 +103,11 @@ class MeijerProduce {
         appleCrate = grannySmithCrate
         fruitCrate = orangeCrate
 
-        //Use Site Variance ( we are creating projection of the generic type
-        /*val projectedAppleCrate: InvariantCrate<in Apple> = fruitCrate
+        //Use Site Variance ( we are creating projection of the generic type)
+        val projectedAppleCrate: InvariantCrate<in Apple> = fruitCrate
         var projectedFruitCrate: InvariantCrate<out Fruit> = appleCrate
         val projectedGrannySmithCrate: InvariantCrate<in GrannySmith> = appleCrate
-        projectedFruitCrate = orangeCrate*/
+        projectedFruitCrate = orangeCrate
 
     }
 
@@ -114,16 +119,20 @@ class MeijerProduce {
         var fruitCrate : CovariantFarm<Fruit> = CovariantFarm<Fruit>(listOf(oranges[0], apples[1]))
         val kaleCrate : CovariantFarm<Kale> = CovariantFarm<Kale>(listOf(Kale("kalegreens", threeDaysAgo)))
 
+
+        orangeCrate = fruitCrate
+        appleCrate = fruitCrate
+
         //Covariance of generic Type maintains subtype relation between type parameter
         fruitCrate = appleCrate
         //the above line works because anywhere we need a fruit an apple will suffice
+        val fruit: Fruit = fruitCrate.getProduce()
         //and also compiler makes sure that out type parameter is not usable as a method parameter inside the generic type
         //if it allowed this type parameter you could add fruit which is not an apple that could cause problem when u are looking for apples
+
         grannySmithCrate = appleCrate
-        appleCrate = fruitCrate
         appleCrate = grannySmithCrate
         fruitCrate = orangeCrate
-        orangeCrate = fruitCrate
 
     }
 
@@ -135,11 +144,17 @@ class MeijerProduce {
         var fruitCrate = ContravariantConsumer<Fruit>()
         var kaleCrate = ContravariantConsumer<Kale>()
 
+        appleCrate = grannySmithCrate
+
         //Contravariance of generic Type inverts the subtype relation between type parameter
         fruitCrate = appleCrate
         grannySmithCrate = appleCrate
         appleCrate = fruitCrate
-        appleCrate = grannySmithCrate
+        //the above line works because anywhere it needs a fruit passing in an apple will suffice
+        appleCrate.isProduceFresh(apples[0])
+        //compiler makes sure that in type parameter is not usable as a return type inside the generic type
+        //if it allowed this you will have problem when
+
         fruitCrate = orangeCrate
         orangeCrate = fruitCrate
 
